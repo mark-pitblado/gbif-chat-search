@@ -6,9 +6,13 @@ import pandas as pd
 import os
 
 from urllib.parse import urlencode
+from dotenv import load_dotenv
 
 # Set up API client
-client = openai.OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+
+load_dotenv()
+
+client = openai.OpenAI(api_key=os.getenv("GBIF_CHAT_OPENAI_API_KEY"))
 GBIF_API_BASE_URL = "https://api.gbif.org/v1/occurrence/search"
 
 # Setup settings for app
@@ -35,6 +39,7 @@ def extract_query_fields(user_input):
         - Output should be valid JSON only.
         - If there is a range, separate the values by a ,
         - If there is a country specified, use the two letter code for that country in capital letters as the value.
+        - If the user enters the common name for a scientific name, such as "Sparrow", use the scientific name that best fits that common name.
     """
     response = client.chat.completions.create(
         model="o4-mini-2025-04-16", messages=[{"role": "user", "content": prompt}]
@@ -76,7 +81,7 @@ def main():
 
                 # GBIF Natural Language Search
                 This tool helps researchers search GBIF through natural language queries.
-                Enter queries like 'Birds collected in British Columbia in 2000'. This tool uses ChatGPT o4-mini. Any text entered in the text box below will be sent to OpenAI.
+                Enter queries like 'Birds collected in British Columbia in 2000'. This tool uses ChatGPT o4-mini. Any text entered in the text box below will be sent to OpenAI. You may review their privacy policy [here](https://openai.com/policies/row-privacy-policy/)
 
                 """)
 
