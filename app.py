@@ -118,10 +118,14 @@ def main():
         "Enter your specimen search query",
         placeholder="e.g. Blue Jays from Toronto",
     )
-    institution_key = st.text_input(
-        "To limit searches to a particular institution, input the institutions identifier key here",
-        placeholder="36046980-307d-43e0-93ce-d4e599162e93",
-    )
+    # Attempt to get the institution key from the environment if set
+    institution_key = os.getenv("INSTITUTION_KEY")
+    # If not configured, give the user the opportunity to enter it.
+    if not institution_key:
+        institution_key = st.text_input(
+            "To limit searches to a particular institution, input the institutions identifier key here",
+            placeholder="36046980-307d-43e0-93ce-d4e599162e93",
+        )
     search_clicked = st.button("SEARCH")
 
     if search_clicked and user_query:
