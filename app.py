@@ -82,13 +82,13 @@ def main():
 
                 # GBIF Natural Language Search
                 This tool helps researchers search GBIF through natural language queries.
-                Enter queries like 'Birds collected in British Columbia in 2000'. This tool uses ChatGPT o4-mini. Any text entered in the text box below will be sent to OpenAI. You may review their privacy policy [here](https://openai.com/policies/row-privacy-policy/)
+                Enter queries like 'Birds collected in British Columbia in 2000'. This tool uses ChatGPT o4-mini. Any text entered in the text box below will be sent to OpenAI. You may review their privacy policy [here](https://openai.com/policies/row-privacy-policy/). This project is not endorsed or affiliated with GBIF.
 
                 """)
 
     user_query = st.text_input(
         "Enter your specimen search query",
-        placeholder="e.g. Search birds in British Columbia",
+        placeholder="e.g. Blue Jays from Toronto",
     )
     institution_key = st.text_input(
         "To limit searches to a particular institution, input the institutions identifier key here",
