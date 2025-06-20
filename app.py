@@ -50,7 +50,9 @@ def extract_query_fields(user_input):
 
 # Generate URL
 def generate_gbif_search_url(fields, institution_key):
-    return f"{GBIF_API_BASE_URL}?{urlencode(fields)}&institutionKey={institution_key}&limit=300"
+    if institution_key and institution_key.strip():
+        return f"{GBIF_API_BASE_URL}?{urlencode(fields)}&institutionKey={institution_key}&limit=300"
+    return f"{GBIF_API_BASE_URL}?{urlencode(fields)}&limit=300"
 
 
 # Generate table
