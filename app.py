@@ -120,8 +120,8 @@ def main():
                         hide_index=True,
                     )
                 st.markdown(f" [**Open raw GBIF search results**]({search_url})")
-            except Exception as e:
-                st.error(f"X Error: {e}")
+            except Exception:
+                st.error("Sorry something went wrong. Please try again.")
 
 
 if __name__ == "__main__":
