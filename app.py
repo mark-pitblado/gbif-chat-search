@@ -28,10 +28,10 @@ def extract_query_fields(user_input):
 
     You are a chatbot helping users convert natural langauge prompts into Global Biodiversity Information FacilityAPI fields.
 
-    Extract the taxonomy (scientific_name), location (locality), continent (continent), country (country), state/province (stateProvince), collector (recordedBy), collection date (eventDate) from this user query: '{user_input}'.
+    Extract the taxonomy (scientific_name), location (locality), continent (continent), country (country), state/province (stateProvince), collector (recordedBy), collection date (eventDate), and mediaType from this user query: '{user_input}'.
 
     Return the result as a JSON dictionary using only valid gbif api parameters as keys if mentioned. For example, these are some examples of valid keys:
-        'scientificName', 'locality', 'continent', 'country', 'stateProvince', 'recordedBy', 'eventDate'
+        'scientificName', 'locality', 'continent', 'country', 'stateProvince', 'recordedBy', 'eventDate', "mediaType"
 
     Additional instructions:
         - Use 'location' only for geographic localities, lakes, cities, landmarks, etc.
@@ -67,6 +67,31 @@ def generate_table(search_url: str):
     df = pd.DataFrame(response.json()["results"])
     df["key"] = "https://gbif.org/occurrence/" + df["key"].astype("str")
     df = df.rename({"key": "link"}, axis=1)
+    # Handle images
+
+    if "media" in df.columns:
+
+        def extract_media_info(media_list):
+            if not media_list or not isinstance(media_list, list):
+                return "", ""
+            identifiers = []
+            for media_item in media_list:
+                if isinstance(media_item, dict) and "identifier" in media_item:
+                    identifiers.append(media_item["identifier"])
+
+            if not identifiers:
+                return "", ""
+
+            # Return first URL and count
+            first_url = identifiers[0]
+            count = len(identifiers)
+            return (
+                first_url,
+                f"View image{' (' + str(count) + ')' if count > 1 else ''}",
+            )
+
+        media_info = df["media"].apply(extract_media_info)
+        df["media_url"] = [info[0] for info in media_info]
     col_order = [
         "link",
         "catalogNumber",
@@ -74,6 +99,7 @@ def generate_table(search_url: str):
         "eventDate",
         "recordedBy",
         "locality",
+        "media_url",
     ]
     existing_cols = [col for col in col_order if col in df.columns]
     return df[existing_cols]
@@ -114,7 +140,13 @@ def main():
                         generate_table(search_url),
                         column_config={
                             "link": st.column_config.LinkColumn(
-                                "Link", display_text="View record"
+                                "link", display_text="View record"
+                            ),
+                            "media_url": st.column_config.LinkColumn(
+                                "image",
+                                display_text=df["media_display"]
+                                if "media_display" in df.columns
+                                else "View image",
                             ),
                         },
                         hide_index=True,
