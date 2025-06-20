@@ -73,7 +73,8 @@ def generate_table(search_url: str):
         "recordedBy",
         "locality",
     ]
-    return df[col_order]
+    existing_cols = [col for col in col_order if col in df.columns]
+    return df[existing_cols]
 
 
 def main():
