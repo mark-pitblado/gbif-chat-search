@@ -17,7 +17,7 @@ GBIF_API_BASE_URL = "https://api.gbif.org/v1/occurrence/search"
 
 # Setup settings for app
 st.set_page_config(
-    page_title="GBIF Plain Language Search",
+    page_title="GBIF Natural Language Search",
     page_icon="🌿",
     layout="wide",
 )
