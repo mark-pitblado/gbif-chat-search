@@ -18,7 +18,9 @@ jobs:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
       - name: Log in to DO Container Registry
         run: doctl registry login --expiry-seconds 600
-      - name: Tag image
+      - name: Tag image with sha
         run: docker tag streamlit registry.digitalocean.com/gbif-chat-search/streamlit:${{ github.sha }}
+      - name: Tag image with latest tag
+        run: docker tag streamlit registry.digitalocean.com/gbif-chat-search/streamlit:latest
       - name: Push image to DO Container Registry
         run: docker push registry.digitalocean.com/gbif-chat-search/streamlit:${{ github.sha }}
