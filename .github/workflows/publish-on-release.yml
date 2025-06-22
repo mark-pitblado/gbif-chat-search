@@ -1,0 +1,24 @@
+name: Build and publish on push
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repo
+        uses: actions/checkout@v2
+      - name: Build image
+        run: docker build -t streamlit .
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+      - name: Log in to DO Container Registry
+        run: doctl registry login --expiry-seconds 600
+      - name: Tag image
+        run: docker tag streamlit registry.digitalocean.com/gbif-chat-app/streamlit:${{ github.sha }}
+      - name: Push image to DO Container Registry
+        run: docker push registry.digitalocean.com/gbif-chat-app/streamlit:${{ github.sha }}
