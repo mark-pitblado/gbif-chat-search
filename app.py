@@ -4,9 +4,12 @@ import requests
 import streamlit as st
 import pandas as pd
 import os
+import time
+import random
 
 from urllib.parse import urlencode
 from dotenv import load_dotenv
+from requests.exceptions import RequestException, Timeout, ConnectionError
 
 # Set up API client
 
@@ -65,14 +68,13 @@ def get_institution_guid(institution_name: str) -> str:
         f"https://api.gbif.org/v1/grscicoll/institution/search?q={institution_name}"
     )
     try:
-        response = requests.get(search_url)
-        response.raise_for_status()
+        response = make_request_with_retry(search_url, max_retries=2, base_delay=0.5)
         data = response.json()
 
         if data.get("results") and len(data["results"]) > 0:
             return data["results"][0]["key"]
         return None
-    except requests.RequestException:
+    except (RequestException, json.JSONDecodeError):
         return None
 
 
@@ -88,20 +90,23 @@ def get_collection_guid(collection_name: str) -> str:
         f"https://api.gbif.org/v1/grscicoll/collection/search?q={collection_name}"
     )
     try:
-        response = requests.get(search_url)
-        response.raise_for_status()
+        response = make_request_with_retry(search_url, max_retries=2, base_delay=0.5)
         data = response.json()
 
         if data.get("results") and len(data["results"]) > 0:
             return data["results"][0]["key"]
         return None
-    except requests.RequestException:
+    except (RequestException, json.JSONDecodeError):
         return None
 
 
 # Generate URL
 def generate_gbif_search_url(
-    fields: dict, institution_key: str, institution_code: str, collection_code: str
+    fields: dict,
+    institution_key: str,
+    institution_code: str,
+    collection_code: str,
+    offset: int = 0,
 ) -> str:
     processed_fields = fields.copy()
 
@@ -128,10 +133,59 @@ def generate_gbif_search_url(
         params.append(f"institutionCode={institution_code}")
     if collection_code and collection_code.strip():
         params.append(f"collectionCode={collection_code}")
-    base_url = f"{GBIF_API_BASE_URL}?{urlencode(processed_fields)}&limit=300&basisOfRecord=PRESERVED_SPECIMEN"
+    base_url = f"{GBIF_API_BASE_URL}?{urlencode(processed_fields)}&limit=300&offset={offset}&basisOfRecord=PRESERVED_SPECIMEN"
     if params:
         base_url += "&" + "&".join(params)
     return base_url
+
+
+def make_request_with_retry(url, max_retries=3, base_delay=1, timeout=30):
+    """
+    Make HTTP request with exponential backoff retry logic.
+
+    Args:
+        url: URL to request
+        max_retries: Maximum number of retry attempts
+        base_delay: Base delay in seconds for exponential backoff
+        timeout: Request timeout in seconds
+
+    Returns:
+        requests.Response object
+
+    Raises:
+        RequestException: If all retry attempts fail
+    """
+    for attempt in range(max_retries + 1):
+        try:
+            response = requests.get(url, timeout=timeout)
+            response.raise_for_status()
+            return response
+        except (ConnectionError, Timeout) as e:
+            if attempt == max_retries:
+                raise RequestException(
+                    f"Failed after {max_retries + 1} attempts: {str(e)}"
+                )
+
+            # Calculate delay with exponential backoff + jitter
+            delay = base_delay * (2**attempt) + random.uniform(0, 1)
+            time.sleep(delay)
+        except requests.HTTPError as e:
+            # Don't retry on client errors (4xx), but retry on server errors (5xx)
+            if 400 <= e.response.status_code < 500:
+                raise e
+            elif attempt == max_retries:
+                raise RequestException(
+                    f"Failed after {max_retries + 1} attempts: {str(e)}"
+                )
+
+            delay = base_delay * (2**attempt) + random.uniform(0, 1)
+            time.sleep(delay)
+        except RequestException as e:
+            if attempt == max_retries:
+                raise e
+
+            delay = base_delay * (2**attempt) + random.uniform(0, 1)
+            time.sleep(delay)
 
 
 # Generate table
@@ -139,15 +193,23 @@ def generate_table(search_url: str):
     """
     Takes the json response of a GBIF api call and creates a streamlit table.
     """
-    response = requests.get(search_url)
-    if len(response.json()["results"]) == 0:
-        st.error("No values were found for your query. Please try again.")
+    try:
+        response = make_request_with_retry(search_url, max_retries=3, base_delay=1)
+        if len(response.json()["results"]) == 0:
+            st.error("No values were found for your query. Please try again.")
+            return None
+    except RequestException as e:
+        st.error(f"Failed to fetch data from GBIF API: {str(e)}")
         return None
+    except (KeyError, json.JSONDecodeError) as e:
+        st.error(f"Received invalid response {str(e)} from GBIF API. Please try again.")
+        return None
+
     df = pd.DataFrame(response.json()["results"])
     df["key"] = "https://gbif.org/occurrence/" + df["key"].astype("str")
     df = df.rename({"key": "link"}, axis=1)
-    # Handle images
 
+    # Handle images
     if "media" in df.columns:
 
         def extract_media_info(media_list):
@@ -245,41 +307,102 @@ def main():
                     placeholder="e.g. CTC",
                 )
 
+    if "current_page" not in st.session_state:
+        st.session_state.current_page = 0
+    if "search_params" not in st.session_state:
+        st.session_state.search_params = None
+    if "loading_page" not in st.session_state:
+        st.session_state.loading_page = False
+
     search_clicked = st.button("SEARCH")
 
     if search_clicked and user_query:
+        # Reset to first page on new search
+        st.session_state.current_page = 0
+        st.session_state.search_params = {
+            "fields": None,
+            "institution_key": institution_key,
+            "institution_code": institution_code
+            if "institution_code" in locals()
+            else None,
+            "collection_code": collection_code
+            if "collection_code" in locals()
+            else None,
+        }
+
         with st.spinner("Processing query..."):
             try:
                 fields = extract_query_fields(user_query)
+                st.session_state.search_params["fields"] = fields
                 st.subheader("Interpreted parameters")
                 st.table(fields)
-
-                search_url = generate_gbif_search_url(
-                    fields,
-                    institution_key=institution_key,
-                    institution_code=institution_code,
-                    collection_code=collection_code,
-                )
-                df = generate_table(search_url)
-                if df is not None:
-                    st.dataframe(
-                        generate_table(search_url),
-                        column_config={
-                            "link": st.column_config.LinkColumn(
-                                "link", display_text="View record"
-                            ),
-                            "media_url": st.column_config.LinkColumn(
-                                "image",
-                                display_text=df["media_display"]
-                                if "media_display" in df.columns
-                                else "View image",
-                            ),
-                        },
-                        hide_index=True,
-                    )
-                st.markdown(f" [**Open raw GBIF search results**]({search_url})")
             except Exception:
                 st.error("Sorry something went wrong. Please try again.")
+
+    if st.session_state.search_params and st.session_state.search_params["fields"]:
+        try:
+            offset = st.session_state.current_page * 300
+            search_url = generate_gbif_search_url(
+                st.session_state.search_params["fields"],
+                institution_key=st.session_state.search_params["institution_key"],
+                institution_code=st.session_state.search_params["institution_code"],
+                collection_code=st.session_state.search_params["collection_code"],
+                offset=offset,
+            )
+
+            # Use st.status for page loading
+            if st.session_state.loading_page:
+                with st.status("Loading page data...", expanded=True) as status:
+                    df = generate_table(search_url)
+                    if df is not None:
+                        st.session_state.loading_page = False
+                        status.update(label="Data loaded", state="complete")
+                    else:
+                        status.update(label="No results found", state="error")
+                        st.session_state.loading_page = False
+            else:
+                df = generate_table(search_url)
+
+            if df is not None:
+                st.dataframe(
+                    df,
+                    column_config={
+                        "link": st.column_config.LinkColumn(
+                            "link", display_text="View record"
+                        ),
+                        "media_url": st.column_config.LinkColumn(
+                            "image",
+                            display_text="View image",
+                        ),
+                    },
+                    hide_index=True,
+                )
+
+                # Pagination controls
+                col1, col2, col3 = st.columns([1, 2, 1])
+                with col1:
+                    if st.button(
+                        "← Previous", disabled=st.session_state.current_page == 0
+                    ):
+                        st.session_state.current_page -= 1
+                        st.session_state.loading_page = True
+                        st.rerun()
+
+                with col2:
+                    st.write(f"Page {st.session_state.current_page + 1}")
+
+                with col3:
+                    if st.button("Next →"):
+                        st.session_state.current_page += 1
+                        st.session_state.loading_page = True
+                        st.rerun()
+
+                st.markdown(f"[**Open raw GBIF search results**]({search_url})")
+
+        except Exception:
+            st.error("Sorry something went wrong.")
+    else:
+        st.markdown("No results to display")
 
 
 if __name__ == "__main__":
