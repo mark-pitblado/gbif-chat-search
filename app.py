@@ -44,7 +44,9 @@ def extract_query_fields(user_input):
         - If the user enters the common name for a scientific name, such as "Sparrow", use the scientific name that best fits that common name.
     """
     response = client.chat.completions.create(
-        model="o4-mini-2025-04-16", messages=[{"role": "user", "content": prompt}]
+        model="o4-mini-2025-04-16",
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
     )
     extracted = response.choices[0].message.content
     return json.loads(extracted)
