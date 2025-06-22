@@ -1,9 +1,9 @@
 [theme]
 base = "light"
-primaryColor = "#1ea54c"
+primaryColor = "#31862c"
 backgroundColor="#f5f5f5"
 borderColor="#000903"
-linkColor="1ea54c"
+linkColor="#31862c"
 showWidgetBorder=true
 
 [client]
