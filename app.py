@@ -47,6 +47,7 @@ def extract_query_fields(user_input):
         model="o4-mini-2025-04-16",
         messages=[{"role": "user", "content": prompt}],
         response_format={"type": "json_object"},
+        max_completion_tokens=1000,
     )
     extracted = response.choices[0].message.content
     return json.loads(extracted)
