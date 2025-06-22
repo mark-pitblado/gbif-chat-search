@@ -49,10 +49,20 @@ def extract_query_fields(user_input):
 
 
 # Generate URL
-def generate_gbif_search_url(fields, institution_key):
-    if institution_key and institution_key.strip():
-        return f"{GBIF_API_BASE_URL}?{urlencode(fields)}&institutionKey={institution_key}&limit=300"
-    return f"{GBIF_API_BASE_URL}?{urlencode(fields)}&limit=300"
+def generate_gbif_search_url(
+    fields, institution_key, institution_code, collection_code
+):
+    params = []
+    if institution_key:
+        params.append(f"institutionKey={institution_key}")
+    if institution_code and institution_code.strip():
+        params.append(f"institutionCode={institution_code}")
+    if collection_code and collection_code.strip():
+        params.append(f"collectionCode={collection_code}")
+    base_url = f"{GBIF_API_BASE_URL}?{urlencode(fields)}&limit=300"
+    if params:
+        base_url += "&" + "&".join(params)
+    return base_url
 
 
 # Generate table
@@ -120,12 +130,23 @@ def main():
     )
     # Attempt to get the institution key from the environment if set
     institution_key = os.getenv("INSTITUTION_KEY")
-    # If not configured, give the user the opportunity to enter it.
+    # If not configured, give the user the opportunity to narrow down their searches.
     if not institution_key:
-        institution_key = st.text_input(
-            "To limit searches to a particular institution, input the institutions identifier key here",
-            placeholder="36046980-307d-43e0-93ce-d4e599162e93",
+        st.markdown(
+            "If you would like to filter your results to a particular institution or collection, enter those values below. The search will attempt to parse these values from your query, however can be unreliable."
         )
+        col1, col2 = st.columns(2)
+        with col1:
+            institution_code = st.text_input(
+                "Institution Code",
+                placeholder="e.g. ROM",
+            )
+        with col2:
+            collection_code = st.text_input(
+                "Collection Code",
+                placeholder="e.g. BIRDS",
+            )
+
     search_clicked = st.button("SEARCH")
 
     if search_clicked and user_query:
@@ -136,7 +157,10 @@ def main():
                 st.table(fields)
 
                 search_url = generate_gbif_search_url(
-                    fields, institution_key=institution_key
+                    fields,
+                    institution_key=institution_key,
+                    institution_code=institution_code,
+                    collection_code=collection_code,
                 )
                 df = generate_table(search_url)
                 if df is not None:
