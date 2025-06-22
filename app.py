@@ -125,7 +125,7 @@ def generate_gbif_search_url(
         params.append(f"institutionCode={institution_code}")
     if collection_code and collection_code.strip():
         params.append(f"collectionCode={collection_code}")
-    base_url = f"{GBIF_API_BASE_URL}?{urlencode(fields)}&limit=300"
+    base_url = f"{GBIF_API_BASE_URL}?{urlencode(processed_fields)}&limit=300&basisOfRecord=PRESERVED_SPECIMEN"
     if params:
         base_url += "&" + "&".join(params)
     return base_url
