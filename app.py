@@ -311,8 +311,6 @@ def main():
         st.session_state.current_page = 0
     if "search_params" not in st.session_state:
         st.session_state.search_params = None
-    if "loading_page" not in st.session_state:
-        st.session_state.loading_page = False
 
     search_clicked = st.button("SEARCH")
 
@@ -351,17 +349,12 @@ def main():
             )
 
             # Use st.status for page loading
-            if st.session_state.loading_page:
-                with st.status("Loading page data...", expanded=True) as status:
-                    df = generate_table(search_url)
-                    if df is not None:
-                        st.session_state.loading_page = False
-                        status.update(label="Data loaded", state="complete")
-                    else:
-                        status.update(label="No results found", state="error")
-                        st.session_state.loading_page = False
-            else:
+            with st.status("Generating results table...", expanded=True) as status:
                 df = generate_table(search_url)
+                if df is not None:
+                    status.update(label="Data loaded", state="complete")
+                else:
+                    status.update(label="No results found", state="error")
 
             if df is not None:
                 st.dataframe(
@@ -385,7 +378,6 @@ def main():
                         "← Previous", disabled=st.session_state.current_page == 0
                     ):
                         st.session_state.current_page -= 1
-                        st.session_state.loading_page = True
                         st.rerun()
 
                 with col2:
@@ -394,7 +386,6 @@ def main():
                 with col3:
                     if st.button("Next →"):
                         st.session_state.current_page += 1
-                        st.session_state.loading_page = True
                         st.rerun()
 
                 st.markdown(f"[**Open raw GBIF search results**]({search_url})")
