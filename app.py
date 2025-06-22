@@ -28,15 +28,17 @@ def extract_query_fields(user_input):
 
     You are a chatbot helping users convert natural langauge prompts into Global Biodiversity Information FacilityAPI fields.
 
-    Extract the taxonomy (scientific_name), location (locality), continent (continent), country (country), state/province (stateProvince), collector (recordedBy), collection date (eventDate), and mediaType from this user query: '{user_input}'.
+    Extract the taxonomy (scientific_name), location (locality), collection, institution, continent (continent), country (country), state/province (stateProvince), collector (recordedBy), collection date (eventDate), and mediaType from this user query: '{user_input}'.
 
     Return the result as a JSON dictionary using only valid gbif api parameters as keys if mentioned. For example, these are some examples of valid keys:
         'scientificName', 'locality', 'continent', 'country', 'stateProvince', 'recordedBy', 'eventDate', "mediaType"
 
     Additional instructions:
+        - Output should be valid JSON only.
         - Use 'location' only for geographic localities, lakes, cities, landmarks, etc.
         - Only use recordedBy for human names.
-        - Output should be valid JSON only.
+        - The name of the collection, if present, should be assigned to the "collection" key in the JSON.
+        - The name of the institution, if present, should be assigned to the "institution" key in the JSON.
         - If there is a range, separate the values by a ,
         - If there is a country specified, use the two letter code for that country in capital letters as the value.
         - If the user enters the common name for a scientific name, such as "Sparrow", use the scientific name that best fits that common name.
@@ -48,10 +50,74 @@ def extract_query_fields(user_input):
     return json.loads(extracted)
 
 
+def get_institution_guid(institution_name: str) -> str:
+    """
+    Convert institution name to GBIF institution key (GUID).
+    Returns the first match or None if no matches found.
+    """
+    if not institution_name or not institution_name.strip():
+        return None
+
+    search_url = (
+        f"https://api.gbif.org/v1/grscicoll/institution/search?q={institution_name}"
+    )
+    try:
+        response = requests.get(search_url)
+        response.raise_for_status()
+        data = response.json()
+
+        if data.get("results") and len(data["results"]) > 0:
+            return data["results"][0]["key"]
+        return None
+    except requests.RequestException:
+        return None
+
+
+def get_collection_guid(collection_name: str) -> str:
+    """
+    Convert collection name to GBIF collection key (GUID).
+    Returns the first match or None if no matches found.
+    """
+    if not collection_name or not collection_name.strip():
+        return None
+
+    search_url = (
+        f"https://api.gbif.org/v1/grscicoll/collection/search?q={collection_name}"
+    )
+    try:
+        response = requests.get(search_url)
+        response.raise_for_status()
+        data = response.json()
+
+        if data.get("results") and len(data["results"]) > 0:
+            return data["results"][0]["key"]
+        return None
+    except requests.RequestException:
+        return None
+
+
 # Generate URL
 def generate_gbif_search_url(
-    fields, institution_key, institution_code, collection_code
-):
+    fields: dict, institution_key: str, institution_code: str, collection_code: str
+) -> str:
+    processed_fields = fields.copy()
+
+    # Convert institution name to GUID if present
+    if "institution" in processed_fields:
+        institution_guid = get_institution_guid(processed_fields["institution"])
+        if institution_guid:
+            processed_fields["institutionKey"] = institution_guid
+        # Remove the original text field
+        del processed_fields["institution"]
+
+    # Convert collection name to GUID if present
+    if "collection" in processed_fields:
+        collection_guid = get_collection_guid(processed_fields["collection"])
+        if collection_guid:
+            processed_fields["collectionKey"] = collection_guid
+        # Remove the original text field
+        del processed_fields["collection"]
+
     params = []
     if institution_key:
         params.append(f"institutionKey={institution_key}")
