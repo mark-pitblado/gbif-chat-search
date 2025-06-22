@@ -35,7 +35,7 @@ def extract_query_fields(user_input):
 
     Additional instructions:
         - Output should be valid JSON only.
-        - Use 'location' only for geographic localities, lakes, cities, landmarks, etc.
+        - Use 'location' only for geographic localities, lakes, cities, landmarks, etc. Do not put the collection or institution value in this field.
         - Only use recordedBy for human names.
         - The name of the collection, if present, should be assigned to the "collection" key in the JSON.
         - The name of the institution, if present, should be assigned to the "institution" key in the JSON.
@@ -186,7 +186,7 @@ def main():
 
                 # GBIF Natural Language Search
                 This tool helps researchers search GBIF through natural language queries.
-                Enter queries like 'Birds collected in British Columbia in 2000'. This tool uses ChatGPT o4-mini. Any text entered in the text box below will be sent to OpenAI. You may review their privacy policy [here](https://openai.com/policies/row-privacy-policy/). This project is not endorsed or affiliated with GBIF.
+                This tool uses ChatGPT o4-mini. Any text entered in the text box below will be sent to OpenAI. You may review their privacy policy [here](https://openai.com/policies/row-privacy-policy/). This project is not endorsed or affiliated with GBIF.
 
                 """)
 
@@ -194,24 +194,25 @@ def main():
         "Enter your specimen search query",
         placeholder="e.g. Blue Jays from Toronto",
     )
-    # Attempt to get the institution key from the environment if set
-    institution_key = os.getenv("INSTITUTION_KEY")
-    # If not configured, give the user the opportunity to narrow down their searches.
-    if not institution_key:
-        st.markdown(
-            "If you would like to filter your results to a particular institution or collection, enter those values below. The search will attempt to parse these values from your query, however can be unreliable."
-        )
-        col1, col2 = st.columns(2)
-        with col1:
-            institution_code = st.text_input(
-                "Institution Code",
-                placeholder="e.g. ROM",
+    with st.expander("Manual configuration options"):
+        # Attempt to get the institution key from the environment if set
+        institution_key = os.getenv("INSTITUTION_KEY")
+        # If not configured, give the user the opportunity to narrow down their searches.
+        if not institution_key:
+            st.markdown(
+                "If you would like to filter your results to a particular institution or collection, enter those values below. The search will attempt to parse these values from your query, however can be unreliable."
             )
-        with col2:
-            collection_code = st.text_input(
-                "Collection Code",
-                placeholder="e.g. BIRDS",
-            )
+            col1, col2 = st.columns(2)
+            with col1:
+                institution_code = st.text_input(
+                    "Institution Code",
+                    placeholder="e.g. ROM",
+                )
+            with col2:
+                collection_code = st.text_input(
+                    "Collection Code",
+                    placeholder="e.g. BIRDS",
+                )
 
     search_clicked = st.button("SEARCH")
 
