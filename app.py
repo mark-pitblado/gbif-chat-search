@@ -302,7 +302,7 @@ def display_results():
                 st.write(f"Page {st.session_state.current_page + 1}")
 
             with col3:
-                if st.button("Next →"):
+                if st.button("Next →", disabled=len(df) < 300):
                     st.session_state.current_page += 1
                     st.rerun(scope="fragment")  # Only rerun this fragment
 
