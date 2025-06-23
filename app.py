@@ -249,11 +249,6 @@ def generate_table(search_url: str):
 @st.fragment
 def display_results():
     """Fragment that handles data display and pagination independently"""
-    if not (
-        st.session_state.search_params and st.session_state.search_params["fields"]
-    ):
-        st.markdown("No results to display")
-        return
 
     try:
         offset = st.session_state.current_page * 300
