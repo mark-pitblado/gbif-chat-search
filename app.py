@@ -246,6 +246,72 @@ def generate_table(search_url: str):
     return df[existing_cols]
 
 
+@st.fragment
+def display_results():
+    """Fragment that handles data display and pagination independently"""
+    if not (
+        st.session_state.search_params and st.session_state.search_params["fields"]
+    ):
+        st.markdown("No results to display")
+        return
+
+    try:
+        offset = st.session_state.current_page * 300
+        search_url = generate_gbif_search_url(
+            st.session_state.search_params["fields"],
+            institution_key=st.session_state.search_params["institution_key"],
+            institution_code=st.session_state.search_params["institution_code"],
+            collection_code=st.session_state.search_params["collection_code"],
+            offset=offset,
+        )
+
+        # Use st.status for page loading
+        page_num = st.session_state.current_page + 1
+        with st.status(
+            f"Generating results table for page {page_num}", expanded=True
+        ) as status:
+            df = generate_table(search_url)
+            if df is not None:
+                status.update(label="Data loaded", state="complete")
+            else:
+                status.update(label="No results found", state="error")
+
+        if df is not None:
+            st.dataframe(
+                df,
+                column_config={
+                    "link": st.column_config.LinkColumn(
+                        "link", display_text="View record"
+                    ),
+                    "media_url": st.column_config.LinkColumn(
+                        "image",
+                        display_text="View image",
+                    ),
+                },
+                hide_index=True,
+            )
+
+            # Pagination controls
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col1:
+                if st.button("← Previous", disabled=st.session_state.current_page == 0):
+                    st.session_state.current_page -= 1
+                    st.rerun(scope="fragment")  # Only rerun this fragment
+
+            with col2:
+                st.write(f"Page {st.session_state.current_page + 1}")
+
+            with col3:
+                if st.button("Next →"):
+                    st.session_state.current_page += 1
+                    st.rerun(scope="fragment")  # Only rerun this fragment
+
+            st.markdown(f"[**Open raw GBIF search results**]({search_url})")
+
+    except Exception:
+        st.error("Sorry something went wrong.")
+
+
 def main():
     st.markdown(
         """
@@ -337,63 +403,7 @@ def main():
             except Exception:
                 st.error("Sorry something went wrong. Please try again.")
 
-    if st.session_state.search_params and st.session_state.search_params["fields"]:
-        try:
-            offset = st.session_state.current_page * 300
-            search_url = generate_gbif_search_url(
-                st.session_state.search_params["fields"],
-                institution_key=st.session_state.search_params["institution_key"],
-                institution_code=st.session_state.search_params["institution_code"],
-                collection_code=st.session_state.search_params["collection_code"],
-                offset=offset,
-            )
-
-            # Use st.status for page loading
-            with st.status("Generating results table...", expanded=True) as status:
-                df = generate_table(search_url)
-                if df is not None:
-                    status.update(label="Data loaded", state="complete")
-                else:
-                    status.update(label="No results found", state="error")
-
-            if df is not None:
-                st.dataframe(
-                    df,
-                    column_config={
-                        "link": st.column_config.LinkColumn(
-                            "link", display_text="View record"
-                        ),
-                        "media_url": st.column_config.LinkColumn(
-                            "image",
-                            display_text="View image",
-                        ),
-                    },
-                    hide_index=True,
-                )
-
-                # Pagination controls
-                col1, col2, col3 = st.columns([1, 2, 1])
-                with col1:
-                    if st.button(
-                        "← Previous", disabled=st.session_state.current_page == 0
-                    ):
-                        st.session_state.current_page -= 1
-                        st.rerun()
-
-                with col2:
-                    st.write(f"Page {st.session_state.current_page + 1}")
-
-                with col3:
-                    if st.button("Next →"):
-                        st.session_state.current_page += 1
-                        st.rerun()
-
-                st.markdown(f"[**Open raw GBIF search results**]({search_url})")
-
-        except Exception:
-            st.error("Sorry something went wrong.")
-    else:
-        st.markdown("No results to display")
+    display_results()
 
 
 if __name__ == "__main__":
