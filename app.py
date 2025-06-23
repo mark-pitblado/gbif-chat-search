@@ -354,10 +354,9 @@ def main():
             image="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0Ij48ZyBmaWxsPSIjMzE4NjJjIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGNsaXAtcnVsZT0iZXZlbm9kZCI+PHBhdGggZD0iTTIyLjU4NiAxMC4xNzNhMi4yNSAyLjI1IDAgMCAxLTIuMTc3LS41ODJsLS41NDEtLjU0MWE0Ljc1IDQuNzUgMCAwIDEtNS4xOS03LjM3MWE3LjcgNy43IDAgMCAwLTEuNjA0LS4zNzZBMTEgMTEgMCAwIDAgMTIgMS4yNUM2LjA2MyAxLjI1IDEuMjUgNi4wNjMgMS4yNSAxMmMwIDEuODU2LjQ3MSAzLjYwNSAxLjMgNS4xM2wtLjc4NyA0LjIzM2EuNzUuNzUgMCAwIDAgLjg3NC44NzRsNC4yMzMtLjc4OEExMC43IDEwLjcgMCAwIDAgMTIgMjIuNzVjNS45MzcgMCAxMC43NS00LjgxMyAxMC43NS0xMC43NXEwLS41NDMtLjA1My0xLjA3NHMtLjA0NS0uMzI1LS4xMTEtLjc1M00xOS45NyA1Ljk3YS43NS43NSAwIDAgMSAxLjA2IDBsMS41IDEuNWEuNzUuNzUgMCAwIDEtMS4wNiAxLjA2bC0xLjUtMS41YS43NS43NSAwIDAgMSAwLTEuMDYiLz48cGF0aCBkPSJNMTguNSAyLjc1YTEuNzUgMS43NSAwIDEgMCAwIDMuNWExLjc1IDEuNzUgMCAwIDAgMC0zLjVNMTUuMjUgNC41YTMuMjUgMy4yNSAwIDEgMSA2LjUgMGEzLjI1IDMuMjUgMCAwIDEtNi41IDAiLz48L2c+PC9zdmc+",
             size="large",
         )
-        st.markdown("""
-                    # GBIF Natural Language Search
-
-                    ## Overview
+        st.markdown("# GBIF Natural Language Search")
+        with st.expander(label="Overview", expanded=True):
+            st.markdown("""
                     This tool helps researchers search GBIF for preserved specimens through natural language queries. Enter your query in natural language in the search box, and press search. Results will be processed and a table will display with the results. You can download the results as a csv file by hovering over the table and pressing the download icon.
 
                     Some things that you can search for:
@@ -366,13 +365,16 @@ def main():
                     - Records from a particular place (continent, country, or location description)
                     - Records collected at a particular time. Ranges are supported.
                     - Records collected by a particular person.
-
-                    ## Privacy and disclaimers
+                        """)
+        with st.expander(label="Privacy and disclaimers", expanded=False):
+            st.markdown("""
                     Queries are parsed by ChatGPT o4-mini. Any text entered in the search box will be sent to OpenAI and be visible to the developers. You may review the privacy policy of OpenAI [here](https://openai.com/policies/row-privacy-policy/). This project is not endorsed or affiliated with GBIF. This tool comes with no uptime warranties or guarantees.
+                        """)
+        with st.expander(label="Source code", expanded=False):
+            st.markdown("""
 
-                    ## Source code
                     The source code for this application is available on [GitHub](https://github.com/mark-pitblado/gbif-chat-search) under an MIT license. The logo is from [iconoir](https://iconoir.com/) and is also under an MIT license.
-        """)
+                        """)
 
     st.markdown("## Search")
     user_query = st.text_input(
