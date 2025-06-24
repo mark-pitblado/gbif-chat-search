@@ -48,7 +48,7 @@ def extract_query_fields(user_input):
         - If the user enters the common name for a scientific name, such as "Sparrow", use the scientific name that best fits that common name.
     """
     response = client.chat.completions.create(
-        model="gpt-4.1-nano-2025-04-14",
+        model="gpt-4o-mini-2024-07-18",
         messages=[{"role": "user", "content": prompt}],
         response_format={"type": "json_object"},
         max_completion_tokens=1000,
