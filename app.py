@@ -49,13 +49,12 @@ def extract_query_fields(user_input):
         - If there is no value, do NOT put the value as null. Just leave the parameter out.
     """
     response = client.chat.completions.create(
-        model="o3-2025-04-16",
+        model="o4-mini-2025-04-16",
         messages=[
             {"role": "developer", "content": system_prompt},
             {"role": "user", "content": user_input},
         ],
         response_format={"type": "json_object"},
-        max_completion_tokens=1000,
     )
     extracted = response.choices[0].message.content
     return json.loads(extracted)
