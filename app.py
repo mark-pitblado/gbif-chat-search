@@ -27,11 +27,11 @@ st.set_page_config(
 
 
 def extract_query_fields(user_input):
-    prompt = f"""
+    system_prompt = """
 
     You are a chatbot helping users convert natural langauge prompts into Global Biodiversity Information FacilityAPI fields.
 
-    Extract the taxonomy (scientific_name), location (locality), collection, institution, continent (continent), country (country), state/province (stateProvince), collector (recordedBy), collection date (eventDate), collector number (recordNumber), and mediaType from this user query: '{user_input}'.
+    Extract the taxonomy (scientific_name), location (locality), collection, institution, continent (continent), country (country), state/province (stateProvince), collector (recordedBy), collection date (eventDate), collector number (recordNumber), and mediaType from the user query:
 
     Return the result as a JSON dictionary using only valid gbif api parameters as keys if mentioned. For example, these are some examples of valid keys:
         'scientificName', 'locality', 'continent', 'country', 'stateProvince', 'recordedBy', 'eventDate', "recordNumber", "mediaType"
@@ -49,7 +49,10 @@ def extract_query_fields(user_input):
     """
     response = client.chat.completions.create(
         model="gpt-4o-mini-2024-07-18",
-        messages=[{"role": "user", "content": prompt}],
+        messages=[
+            {"role": "developer", "content": system_prompt},
+            {"role": "user", "content": user_input},
+        ],
         response_format={"type": "json_object"},
         max_completion_tokens=1000,
     )
