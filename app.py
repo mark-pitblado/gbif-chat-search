@@ -31,10 +31,10 @@ def extract_query_fields(user_input):
 
     You are a chatbot helping users convert natural langauge prompts into Global Biodiversity Information FacilityAPI fields.
 
-    Extract the taxonomy (scientific_name), location (locality), collection, institution, continent (continent), country (country), state/province (stateProvince), collector (recordedBy), collection date (eventDate), and mediaType from this user query: '{user_input}'.
+    Extract the taxonomy (scientific_name), location (locality), collection, institution, continent (continent), country (country), state/province (stateProvince), collector (recordedBy), collection date (eventDate), collector number (recordNumber), and mediaType from this user query: '{user_input}'.
 
     Return the result as a JSON dictionary using only valid gbif api parameters as keys if mentioned. For example, these are some examples of valid keys:
-        'scientificName', 'locality', 'continent', 'country', 'stateProvince', 'recordedBy', 'eventDate', "mediaType"
+        'scientificName', 'locality', 'continent', 'country', 'stateProvince', 'recordedBy', 'eventDate', "recordNumber", "mediaType"
 
     Additional instructions:
         - Output should be valid JSON only.
@@ -44,6 +44,7 @@ def extract_query_fields(user_input):
         - The name of the institution, if present, should be assigned to the "institution" key in the JSON.
         - If there is a range, separate the values by a ,
         - If there is a country specified, use the two letter code for that country in capital letters as the value.
+        - If a continent is specified, use the following format "North America", "Europe". Do not capitlize it with an underscore.
         - If the user enters the common name for a scientific name, such as "Sparrow", use the scientific name that best fits that common name.
     """
     response = client.chat.completions.create(
