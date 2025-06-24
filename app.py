@@ -276,19 +276,36 @@ def display_results():
                 status.update(label="No results found", state="error")
 
         if df is not None:
-            st.dataframe(
-                df,
-                column_config={
-                    "link": st.column_config.LinkColumn(
-                        "link", display_text="View record"
-                    ),
-                    "media_url": st.column_config.LinkColumn(
-                        "image",
-                        display_text="View image",
-                    ),
-                },
-                hide_index=True,
-            )
+            if df["recordedBy"].str.contains("|").any():
+                df["recordedBy"] = df["recordedBy"].str.split("|")
+                st.dataframe(
+                    df,
+                    column_config={
+                        "link": st.column_config.LinkColumn(
+                            "link", display_text="View record"
+                        ),
+                        "recordedBy": st.column_config.ListColumn(),
+                        "media_url": st.column_config.LinkColumn(
+                            "image",
+                            display_text="View image",
+                        ),
+                    },
+                    hide_index=True,
+                )
+            else:
+                st.dataframe(
+                    df,
+                    column_config={
+                        "link": st.column_config.LinkColumn(
+                            "link", display_text="View record"
+                        ),
+                        "media_url": st.column_config.LinkColumn(
+                            "image",
+                            display_text="View image",
+                        ),
+                    },
+                    hide_index=True,
+                )
 
             # Pagination controls
             col1, col2, col3 = st.columns([1, 2, 1])
