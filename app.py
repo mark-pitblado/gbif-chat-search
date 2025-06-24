@@ -46,9 +46,10 @@ def extract_query_fields(user_input):
         - If there is a country specified, use the two letter code for that country in capital letters as the value.
         - If a continent is specified, use the following format "North America", "Europe". Do not capitlize it with an underscore.
         - If the user enters the common name for a scientific name, such as "Sparrow", use the scientific name that best fits that common name.
+        - If there is no value, do NOT put the value as null. Just leave the parameter out.
     """
     response = client.chat.completions.create(
-        model="gpt-4o-mini-2024-07-18",
+        model="o3-2025-04-16",
         messages=[
             {"role": "developer", "content": system_prompt},
             {"role": "user", "content": user_input},
