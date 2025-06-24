@@ -189,7 +189,7 @@ def make_request_with_retry(url, max_retries=3, base_delay=1, timeout=30):
 
 
 # Generate table
-def generate_table(search_url: str):
+def generate_table(search_url: str, condensed_table: bool):
     """
     Takes the json response of a GBIF api call and creates a streamlit table.
     """
@@ -243,11 +243,13 @@ def generate_table(search_url: str):
         "media_url",
     ]
     existing_cols = [col for col in col_order if col in df.columns]
-    return df[existing_cols]
+    if condensed_table:
+        return df[existing_cols]
+    return df
 
 
 @st.fragment
-def display_results():
+def display_results(condensed_table: bool):
     """Fragment that handles data display and pagination independently"""
     if not (
         st.session_state.search_params and st.session_state.search_params["fields"]
@@ -269,7 +271,7 @@ def display_results():
         with st.status(
             f"Generating results table for page {page_num}", expanded=True
         ) as status:
-            df = generate_table(search_url)
+            df = generate_table(search_url, condensed_table)
             if df is not None:
                 status.update(label="Data loaded", state="complete")
             else:
@@ -396,6 +398,10 @@ def main():
     if "search_params" not in st.session_state:
         st.session_state.search_params = None
 
+    condensed_table = st.toggle(
+        label="Condensed results table",
+        value=True,
+    )
     search_clicked = st.button("SEARCH")
 
     if search_clicked and user_query:
@@ -421,7 +427,7 @@ def main():
             except Exception:
                 st.error("Sorry something went wrong. Please try again.")
 
-    display_results()
+    display_results(condensed_table=condensed_table)
 
 
 if __name__ == "__main__":
